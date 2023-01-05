@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-  fmt.Println(stringutil.ToUpper("Hello"))
+  fmt.Println(stringutil.Reverse("Hello"))
 }
