@@ -71,3 +71,6 @@ Each possible operation is called a *target*. The `.DEFAULT_GOAL` defines which 
 
 # Staying Up to Date
 There are periodic update to the Go development tools. Go programs are native binaries that don't rely on a separate runtime, so you don't need to worry that updating your development  environment could cause your currently deployed programs to fail. You can have programs compiled with different version of Go running simultaneously on the same computer or VM.
+
+# Next Section
+[[Primitive Types and Declarations]]
