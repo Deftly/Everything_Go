@@ -107,3 +107,94 @@ x := make([]int, 5, 10)
 
 >Never specify a capacity that's less than the length! It is a compile time error to do so with a constant or numeric literal and runtime error with a variable.
 
+## Declaring Your Slice
+The primary goal is to minimize the number of times the slice needs to grow. If it's possible that the slice won't need to grow at all (the function might return nothing), use a `var` declaration with no assigned value to create a `nil` slice.
+
+```Go
+var data []int
+```
+
+If you have some starting values, or if a slice's values aren't going to change, then a slice literal is a good choice.
+
+```Go
+data := []int{2, 4, 6, 8}
+```
+
+If you have a good idea of how large your slice needs to be but don't know the values we use `make`. Now we have to decide if we should specify a nonzero length or a zero length and nonzero capacity.
+- If you are using a slice as a buffer then specify a nonzero length.
+- If you are *sure* you know the exact size you want, you can specify the length and index into the slice to set values. This is often done when transforming values in one slice and storing them in a second. The downside is that if you have the wrong size you'll end up with either zero values at the end or a panic from trying to access elements that don't exist.
+- In other situations use `make` with a zero length and a specified capacity. This allows you to use append to add items to the slice. If the number of items turns out to be smaller you won't have extraneous zero values at the end. If the number of items is larger, you code will not panic.
+
+## Slicing Slices
+A *slice expression* creates a slice from a slice. It's written inside brackets and consists of a starting offset and an ending offset, separated by a colon(:). Leaving off the starting offset, 0 is assumed, likewise leaving off the ending the end of the slice is substituted.
+
+```Go
+x := []int{1, 2, 3, 4}
+y := x[:2]
+z := x[1:]
+d := x[1:3]
+e := x[:]
+fmt.Println("x:", x) // x: [1 2 3 4]
+fmt.Println("y:", y) // y: [1 2]
+fmt.Println("z:", z) // z: [2 3 4]
+fmt.Println("d:", d) // d: [2 3]
+fmt.Println("e:", e) // e: [1 2 3 4]
+```
+
+### Slices share storage sometimes
+When you take a slice from a slice, you are *not* making a copy of the data. Instead you now have two variables that share memory, so changes to an element affects all slices that share that element.
+
+```Go
+x := []int{1, 2, 3, 4}
+y := x[:2]
+z := x[1:]
+x[1] = 20
+y[0] = 10
+z[1] = 30
+fmt.Println("x:", x) // x: [10 20 30 4]
+fmt.Println("y:", y) // y: [10 20]
+fmt.Println("z:", z) // z: [20 30 4]
+```
+
+This can get extra confusing when combined with `append`. 
+
+```Go
+x := []int{1, 2, 3, 4}
+y := x[:2]
+fmt.Println(cap(x), cap(y)) // 4 4
+y = append(y, 30)
+fmt.Println("x:", x) // x: [1 2 30 4]
+fmt.Println("y:", y) // y: [1 2 30]
+```
+
+Whenever you take a slice from another slice, the sub-slice's capacity is set to the capacity of the original slice, minus the offset of the sub-slice within the original slice. This means that any unused capacity in the original slice is also shared with any sub-slices.
+
+To avoid complicated slice situations, you should either never use `append` with a sub-slice or make sure that `append` doesn't cause an overwrite by using a *full slice expression*. This makes it clear how much memory is shared between the parent slice and sub-slice. The full slice expression includes a third part, which indicated the last position in the parent slice's capacity that's available for the sub-slice.
+
+```Go
+y := x[:2:2]
+z := x[2:4:4]
+```
+
+## copy
+If you need to create a slice that's independent of the original, use the built-in `copy` function. 
+
+```Go
+x := []int{1, 2, 3, 4}
+y := make([]int, 4)
+num := copy(y, x)
+fmt.Println(y, num) // [1 2 3 4] 4
+```
+
+`copy` takes two parameters, the first is the destination slice and the second is the source slice. It copies as many values as it can from source to destination, limited by whichever slice is smaller, and returns the number of elements copied. 
+
+You can also copy from the middle of the source slice and between two slice that cover overlapping sections of an underlying slice:
+
+```Go
+x := []int{1, 2, 3, 4}
+num = copy(x[:3], x[1:])
+fmt.Println(x, num) // [2 3 4 4] 3
+```
+
+# Strings, Runes, and Bytes
+You might think that a string in Go is made out of runes, but that's not the case. 
